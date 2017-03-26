@@ -1,0 +1,49 @@
+---
+title: "Price analysis"
+author: "mh3658"
+date: "February 24, 2017"
+output: html_document
+---
+
+I used R studio to do the analysis because it is easier for R studio to read in the asc file.
+
+```{r, warning=FALSE}
+setwd("D:\\Columbia 17spring\\math mthd in fin\\Lecture _4")
+ES<-read.csv("ES.asc", header = TRUE)
+pxclose<- ES$Close
+sigma = array(1:10000)
+len = 1981244
+for(i in 1:10000){
+  pricediff = pxclose[i:len-1]- pxclose[1:(len-i)]
+  
+  pdperct= pricediff/pxclose[1:(len-i)]
+  
+  sigma[i]=sd(pdperct)
+}
+
+```
+
+plot linear-linear graph
+
+```{r}
+time = c(1:10000)
+plot(time, sigma, ylab = "sigma-t", xlab="t",main="lin-lin plot for ES")
+
+```
+
+plot log-log graph for ES
+
+```{r}
+log_sigma=log10(sigma)
+log_time = log10(time)
+plot(log_time, log_sigma, ylab = "logsigma-logt", xlab="logt",main="log-log plot for ES")
+
+```
+
+fit line for least squares linear regression
+
+```{r}
+lm.logsig=lm(log_sigma~log_time)
+summary(lm.logsig)
+```
+

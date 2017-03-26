@@ -1,0 +1,44 @@
+---
+title: "hw1-2"
+author: "mh3658"
+date: "February 24, 2017"
+output: html_document
+---
+
+do the same for FT
+
+```{r, warning=FALSE}
+setwd("D:\\Columbia 17spring\\math mthd in fin\\Lecture _4")
+FT<-read.csv("FT.asc", header = TRUE)
+pxclose2<- FT$Close
+len = 2658895
+sigma2 = array(1:10000)
+for(i in 1:10000){
+  # pricediff2 = diff(pxclose2,lag=i)
+    pricediff2 = pxclose2[i:len-1]- pxclose2[1:(len-i)]
+  
+  pdperct2= pricediff2/pxclose2[1:(len-i)]
+  
+  sigma2[i]=sd(pdperct2)
+}
+time = c(1:10000)
+plot(time, sigma2, ylab = "sigma-t", xlab="t",main="lin-lin plot for FT")
+```
+
+
+plot log-log graph for FT
+
+```{r}
+log_sigma2=log10(sigma2)
+log_time = log10(time)
+plot(log_time, log_sigma2, ylab = "logsigma-logt", xlab="logt",main="log-log plot for FT")
+
+```
+
+
+fit line for least squares linear regression
+
+```{r}
+lm.logsig2=lm(log_sigma2~log_time)
+summary(lm.logsig2)
+```

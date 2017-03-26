@@ -1,0 +1,135 @@
+---
+title: "hw2"
+author: "mh3658"
+date: "March 21, 2017"
+output: html_document
+---
+
+First, read in the 1-min S&P500 E-Mini and FTSE-100 index futures data. 
+
+```{r}
+setwd("D:\\Columbia 17spring\\math mthd in fin\\Lecture _4")
+ES<-read.csv("ES.asc", header = TRUE)
+FT<-read.csv("FT.asc", header = TRUE)
+
+espx = ES$Close
+ftpx = FT$Close
+
+```
+
+
+For tau=1, do the hist and log-plot. First, normalized the result, then graph the result on a log-lin scale, also superimpose the true gaussian pdf (in red line). It can be clearly tell by the graph that the non-gaussian fat-tails exists in the PDF
+
+Also, create vector es\_p and ft\_p to store the log-probability value when x=0. These data would be useful when we estimate alpha in the next problem.
+
+```{r}
+espxdiff = diff(espx, lag=1)
+hist(espxdiff)
+ftpxdiff = diff(ftpx, lag=1)
+hist(ftpxdiff)
+
+eslen = length(espxdiff)
+ftlen = length(ftpxdiff)
+
+esdist <- table(espxdiff)/eslen
+ftdist <- table(ftpxdiff)/ftlen
+
+esdist<-as.data.frame(esdist)
+ftdist<-as.data.frame(ftdist)
+
+sigma1 = sqrt(var(espxdiff))
+sigma2 = sqrt(var(ftpxdiff))
+mu1 = mean(espxdiff)
+mu2 = mean(ftpxdiff)
+
+taus = c(1,5,30,60,120,180,360)
+
+library(ggplot2)
+x_es=as.numeric(as.character(esdist$espxdiff))
+y_es=log10(esdist$Freq)
+norm_es = log10(dnorm(x_es,mu1,sigma1))
+
+es_p<-c(y_es[x_es==0])
+
+q<-ggplot()+geom_point(data= data.frame(x_es, y_es),aes(x_es,y_es))+geom_line(data = data.frame(x_es,norm_es),aes(x_es,norm_es),colour="red")+xlim(c(-50,50))+ylim(c(-7,0))
+q
+
+x_ft=as.numeric(as.character(ftdist$ftpxdiff))
+y_ft=log10(ftdist$Freq)
+norm_ft = log10(dnorm(x_ft,mu2,sigma2))
+
+ft_p<-c(y_ft[x_ft==0])
+
+q1<-ggplot()+geom_point(data= data.frame(x_ft, y_ft),aes(x_ft,y_ft))+geom_line(data = data.frame(x_ft,norm_ft),aes(x_ft,norm_ft),colour="red")+xlim(c(-150,150))+ylim(c(-7,0))
+q1
+
+```
+
+to further develop graph for tau = 5, 30, 60, 120, 180, 360, first re-writing the graph process into a function. Also, keep the probability value for x=0 while doing the graph.
+
+```{r}
+graph <- function(tau = 1, dataset){
+  dif = diff(dataset, lag=tau)
+  dist<-as.data.frame(table(dif)/length(dif))
+  sd = sqrt(var(dif))
+  mu = mean(dif)
+  
+#  library(ggplot2)
+  x=as.numeric(as.character(dist$dif))
+  y=log10(dist$Freq)
+  norm = log10(dnorm(x,mu,sd))
+  
+  # t here is the probability when x=0. This is for calculating the alpha
+  t<-y[x==0]
+  q<-ggplot()+geom_point(data= data.frame(x, y),aes(x,y))+geom_line(data = data.frame(x,norm),aes(x,norm),colour="red")+xlim(c(-150,150))+ylim(c(-7,0))
+  
+  t
+  q
+}
+
+```
+
+redo the problem for different taus
+
+```{r}
+graph(5, espx)
+graph(30, espx)
+graph(60, espx)
+graph(120, espx)
+graph(180, espx)
+graph(360, espx)
+
+graph(5, ftpx)
+graph(30,ftpx)
+graph(60,ftpx)
+graph(120,ftpx)
+graph(180,ftpx)
+graph(360,ftpx)
+
+```
+
+Using the leading-order term from the formula for the taylor-series expansion of the Levy PDF. Infer the Levy exponent alpha for both of the ES and FT markets.
+
+for different tau value, we can get their probability at x=0, which shows above. Collect them into es_p and ft_p (R seems to not have a passing by reference for function, so I have to do it in this dumb way)
+
+To estimate alpha, we try to do regression for log10(P(x=0)) to log10(tau). According to the leading term of our Levy distribution PDF, the slope for this regression is -1/alpha. 
+
+
+```{r}
+es_p <- c(es_p, -0.9423310, -1.3335781,-1.482897,-1.6550708,-1.7809320,-1.9871224)
+ft_p<-c(ft_p, -1.130673, -1.524275,-1.68808, -1.856656, -1.971874, -2.221174)
+
+plot(es_p, log10(taus),type='o')
+plot(ft_p, log10(taus),type='o')
+
+esreg <- lm(es_p~log10(taus))
+ftreg<-lm(ft_p~log10(taus))
+
+es_alpha = as.numeric(-1/(esreg$coefficients[2]))
+es_alpha
+ft_alpha = as.numeric(-1/(ftreg$coefficients[2]))
+ft_alpha
+```
+
+so we can see that es_alpha equals 1.917878
+ft_alpha equals 1.824196
